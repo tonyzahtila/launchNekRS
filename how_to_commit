@@ -1,0 +1,7 @@
+git pull
+git init
+git add *
+git commit -m "latest"
+git branch -M main
+git remote add origin https://github.com/tonyzahtila/launchNekRS.git
+git push -u origin main

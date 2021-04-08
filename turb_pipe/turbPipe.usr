@@ -1,0 +1,201 @@
+C This is a round turbulent pipe flow example
+#include "casedata.h"
+
+#define nstat 4
+c-----------------------------------------------------------------------
+      subroutine userchk
+
+      include 'SIZE'
+      include 'TOTAL'
+
+
+      integer icalld_s
+      data icalld_s /0/
+      save icalld_s
+
+      integer intp_h
+      save    intp_h
+
+      integer index
+      real    radius, theta, z
+
+      integer itr
+      real    rwk(INTP_TOTP,ldim+1) ! r, s, t, dist2
+      integer iwk(INTP_TOTP,3)      ! code, proc, el
+      save    rwk, iwk
+
+      common /rwk_intp/
+     $       fwrk(lx1*ly1*lz1*lelt,ldim),
+     $       fpts(INTP_TOTP),
+     $       pts(3,INTP_TOTP),
+     $       uz_avg(nstat,INTP_NUMR)
+
+      real ur_t(lx1,ly1,lz1,lelt)
+      real u_theta(lx1,ly1,lz1,lelt)
+
+      real ravg(lx1*ly1*lz1*lelt,nstat)
+
+      save atime,timel
+
+c--------Define arbtirary points and set up interpolation-----
+
+      if (icalld_s.eq.0) then
+        icalld_s = 1
+	timel = time
+        call interp_setup(intp_h,0.0,0,nelt)
+
+      do i=1,INTP_NUMZ
+        do j=1,INTP_NUMR
+                do k=1,INTP_NTHETA
+                          index   = (i-1)*(INTP_NUMR*INTP_NTHETA) + (j-1)*INTP_NTHETA + k
+                          radius  = FLOAT(j)/FLOAT(INTP_NUMR)*0.5
+                          theta   = FLOAT(k)/FLOAT(INTP_NTHETA)*2*PI
+                          z       = FLOAT(i)/FLOAT(INTP_NUMZ)*ZLENGTH
+                          pts(1,index) = radius*cos(theta)
+                          pts(2,index) = radius*sin(theta)
+                          pts(3,index) = z
+                  enddo
+          enddo
+        enddo
+      endif
+
+      dtime = time - timel
+      atime = atime + dtime
+
+      if (atime.ne.0. .and. dtime.ne.0.) then
+      ! averaging over time
+	beta      = dtime / atime
+	alpha     = 1. - beta
+
+	! Reynolds Stresses
+	ur_t      = (vx * xm1 + vy*ym1) / (sqrt(xm1**2 + ym1**2))
+	u_theta   = (sqrt(xm1**2 + ym1**2)) * (xm1 * vy - vx*ym1)
+     &                  / (xm1**2 + ym1**2)
+
+c--------Stat Moments------------------------
+	ifverbose = .false.
+	n     = nx1*ny1*nz1*nelv
+
+	print*, "alpha", alpha
+	print*, "beta", beta
+	call avg1(ravg(1,1),vz        ,alpha,beta,n,'uavg',ifverbose)
+	call avg2(ravg(1,2),ur_t      ,alpha,beta,n,'urms',ifverbose)
+	call avg2(ravg(1,3),u_theta   ,alpha,beta,n,'utheta',ifverbose)
+	call avg2(ravg(1,4),vz        ,alpha,beta,n,'wrms',ifverbose)
+
+
+	iostep = 1000
+	print*, "istep", istep
+	print*, "time:", time
+	if (mod(istep,iostep) .eq. 0) then
+c--------uthms---------
+	  do itr = 1,nstat
+	    ! pack working array
+	    call opcopy(fwrk(1,1),fwrk(1,2),fwrk(1,3),
+     &                 ravg(1,itr),ravg(1,itr),ravg(1,itr))
+
+	    ! interpolate
+	    call interp_nfld(fpts,fwrk(1,3),1,pts(1,:),pts(2,:)
+     &                ,pts(3,:),INTP_TOTP,iwk,rwk,INTP_TOTP,
+     &                .true.,intp_h)
+
+	    if (itr .eq. 1) then
+		  print*, "Finish interpolating"
+		  print*, "maxval(fpts)", MAXVAL(fpts)
+		  print*, "maxval fwrk",  MAXVAL(fwrk(:,3))
+		  print*, "max vz",       MAXVAL(vz)
+		  print*, "mz ravg", 	MAXVAL(ravg(:,1))
+	    endif
+
+	    do j=1,INTP_NUMR
+	      uz_avg(itr,j) = 0
+	    enddo
+
+	    do i=1,INTP_NUMZ
+	      do j=1,INTP_NUMR
+		      do k=1,INTP_NTHETA
+			      index   = (i-1)*(INTP_NUMR*INTP_NTHETA)
+     &                            + (j-1)*INTP_NTHETA + k
+			      uz_avg(itr,j) = uz_avg(itr,j) + fpts(index)
+		      enddo
+	      enddo
+	    enddo
+	  enddo
+
+	  do itr =1,nstat
+	    do j=1,INTP_NUMR
+	      uz_avg(itr,j) = uz_avg(itr,j)/FLOAT(INTP_NUMZ*INTP_NTHETA)
+	    enddo
+	  enddo
+
+c-----Write------------------------
+  3         format(1p15e17.9)
+	  open(unit=61,file='statisical_moments.dat')
+	    write(61,'(A)')
+     &       '# y+    uz urur uthuth uzuz'
+
+	  do i = 1,INTP_NUMR
+	     write(61,3)
+     &           0.5/param(2) - FLOAT(i)/FLOAT(INTP_NUMR)*0.5/param(2),
+     &           uz_avg(1,i),
+     &           uz_avg(2,i),
+     &           uz_avg(3,i),
+     &           uz_avg(4,i) - uz_avg(1,i)**2
+	  enddo
+
+	  close(61)
+	endif
+      endif
+	timel = time
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine useric (ix,iy,iz,ieg)
+
+      include 'SIZE'
+      include 'TOTAL'
+      include 'NEKUSE'
+
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat2
+
+      include 'SIZE'
+      include 'TOTAL'
+
+
+      !Set all non-periodic BCs here. This is required due to generating mesh by gmsh and converting it by gmsh2nek
+      do iel=1,nelv
+         do ifc=1,2*ndim
+            id_face = bc(5,ifc,iel,1)
+            if (id_face.eq.3) then    ! wall
+               cbc(ifc,iel,1) = 'W  '
+            endif
+         enddo
+      enddo
+
+      do iel=1,nelt
+      do ifc=1,2*ndim
+	 boundaryID(ifc,iel) = 0
+         if (cbc(ifc,iel,1) .eq. 'W  ') boundaryID(ifc,iel) = 1
+      enddo
+      enddo
+
+      return
+      end
+c-----------------------------------------------------------------------
+      subroutine usrdat3
+
+      include 'SIZE'
+      include 'TOTAL'
+
+      return
+      end

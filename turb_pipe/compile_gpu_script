@@ -1,0 +1,56 @@
+#!/bin/bash
+# Wed Jan 08 2020 14:16:24 GMT+1100 (Australian Eastern Daylight Time)
+
+# Partition for the job:
+#SBATCH --partition=gpgpu
+
+# Multithreaded (SMP) job: must run on one node and the cloud partition
+#SBATCH --nodes=1
+
+# The name of the job:
+#SBATCH --job-name="c_noucx"
+
+# The project ID which this job should run under:
+#SBATCH --account="punim0524"
+
+# Maximum number of tasks/CPU cores used by the job:
+#SBATCH --ntasks-per-node=1
+
+# Number of GPUs requested per node:
+#SBATCH --gres=gpu:1
+# The amount of memory in megabytes per process in the job:
+#SBATCH --mem=8192
+
+# Use this email address:
+#SBATCH --mail-user=tonyzahtila@gmail.com
+
+#SBATCH --output="vase.out"
+
+# The maximum running time of the job in days-hours:mins:sec
+#SBATCH --time=0-1:0:00
+
+# check that the script is launched with sbatch
+if [ "x$SLURM_JOB_ID" == "x" ]; then
+   echo "You need to submit your job to the queuing system with sbatch"
+   exit 1
+fi
+
+
+source /usr/local/module/spartan_new.sh
+module load gompic/2019b
+module load cmake/3.18.4
+
+#module load OpenMPI/3.1.0-intel-2017.u2-GCC-6.2.0-cuda9-tcp
+#module load CMake/3.12.1-intel-2017.u2-GCC-6.2.0-CUDA9
+
+export NEKRS_HOME=$HOME/.local/nekrs
+PATH=${NEKRS_HOME}/bin:${PATH}
+source $HOME/.bash_profile
+
+#export USE_UCX=0
+#export UCX_MEMTYPE_CACHE=n
+
+backend=CUDA
+
+rm -rf ./.cache
+nrspre turbPipe 8

@@ -1,0 +1,62 @@
+                 __    ____  _____
+   ____   ___   / /__ / __ \/ ___/
+  / __ \ / _ \ / //_// /_/ /\__ \ 
+ / / / //  __// ,<  / _, _/___/ / 
+/_/ /_/ \___//_/|_|/_/ |_|/____/  v20.1
+
+COPYRIGHT (c) 2019-2021 UCHICAGO ARGONNE, LLC
+
+MPI tasks: 1
+
+using OCCA_DIR: /home/tzahtila/.local/nekrs/
+using OCCA_CACHE_DIR: /data/gpfs/projects/punim0524/big_pipe/tpp_8M/.cache/occa/
+
+Initializing device
+active occa mode: CUDA
+
+performing dry-run to jit-compile for >8 MPI tasks ...
+
+building udf ... done (3.21016s)
+building nek ... done (62.0071s)
+
+Building parallel face connectivity ... done (0.000247519s)
+Nq: 8 cubNq: 11 
+J in range [0.037037,0.037037]
+min NinternalElements: 27 (ratio: 1.00)
+loading udf kernels ... done
+loading gs kernels ... done (30.8192s)
+loading ns kernels ... done (65.779s)
+================ ELLIPTIC SETUP VELOCITY ================
+bID 1 -> bcType zeroValue
+allNeumann = 0 
+loading elliptic kernels ... done (64.5152s)
+building Jacobi ... done (0.0415309s)
+================ ELLIPTIC SETUP PRESSURE ================
+allNeumann = 1 
+loading elliptic kernels ... done (74.1609s)
+Compiling parALMOND Kernels...done.
+=============BUILDING MULTIGRID LEVEL OF DEGREE 7==================
+Building parallel face connectivity ... done (7.93179e-05s)
+=============BUILDING MULTIGRID LEVEL OF DEGREE 3==================
+J in range [0.037037,0.037037]
+loading elliptic MG kernels ... done (9.5471s)
+Building parallel face connectivity ... done (9.40897e-05s)
+=============BUILDING MULTIGRID LEVEL OF DEGREE 1==================
+J in range [0.037037,0.037037]
+loading elliptic MG kernels ... done (8.79597s)
+building full FEM matrix ... done (0.000288164s)
+Setting up AMG...done (7.33361e-05s)
+--------------------Multigrid Report---------------------
+---------------------------------------------------------
+level|    Type    |                 |     Smoother      |
+     |            |                 |                   |
+---------------------------------------------------------
+   0 |    pMG     |   Matrix-free   | Chebyshev+Schwarz |
+     |            |     Degree  7   |                   |
+   1 |    pMG     |   Matrix-free   | Chebyshev+Schwarz |
+     |            |     Degree  3   |                   |
+   2 |    AMG     |   Matrix        | BoomerAMG         |
+     |            |     Degree  1   |                   |
+---------------------------------------------------------
+
+Build successful.
